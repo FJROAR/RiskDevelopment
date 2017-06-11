@@ -5,5 +5,5 @@ This is a repository where elements of risk theory and applycation built with fr
 
 On this document, each software tool (which will be into a folder) developed will be described.
 
-(1) Altman: It is a R shiny app which computes the possibility for being in bankruptcy according to some simple financial variables of a enterprise. You can choose among different kind of enterprise. There are up to 9 Altman model ready to be applied.
+(1) Altman: It is a R shiny app which computes for an enterprise, what is the possibility of being in bankruptcy according to some simple financial variables. You can choose among different kind of enterprises. There are 3 Altman models ready to be applied which define up to 9 Risk Zone for each enterprise analyzed.
 
