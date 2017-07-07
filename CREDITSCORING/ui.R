@@ -1,4 +1,5 @@
 library(shiny)
+library(rhandsontable)
 
 fluidPage(
   img(src = "TD.jpg"),   img(src = "Big.jpg"),
@@ -56,17 +57,37 @@ fluidRow(
   
   h2(p("Balanceo del Training")),
   
-  column(3,wellPanel(textInput("Dec1", "Indique si desea balancear el training: ", value = "No"),
+  column(3,wellPanel(selectInput("Dec1", "Indique si desea balancear el training: ", choices = list("No" = 0, "Si" = 1)),
                      numericInput("bal1", "Introduzca un porcentaje de balanceo: ", value = 0.015),
                      actionButton("SubmitButton2", "Submit"))
   )),
 
   fluidPage(sidebarPanel(
   
-    h5(textOutput('text3'))
+    h5(htmlOutput('text3'))
   
-  ))
-  
-)
+  )),
 
+fluidRow(
+  
+  br(),
+  
+  h2(p("Analisis Univariante WOE")),
+  
+  column(3,wellPanel(selectInput("Conj1", "Elija Conjunto: ", choices = list("Training" = "DatosTraining.csv",
+                                                                             "Training Balanceado" = "training_balanceado.csv")),
+                     htmlOutput("varselect", inline=TRUE),
+                     selectInput("x1", "Elija Variable: ", 
+                                 choices = htmlOutput("varselect"),
+                                 multiple = TRUE),
+                     actionButton("SubmitButton3", "Lee Variables"),
+                     actionButton("SubmitButton4", "Trameado"))
+  )),
+
+  fluidRow(
+  
+    column(10,rHandsontableOutput('Iv'))
+  
+  )
+)
 

@@ -1,6 +1,7 @@
 library(shiny)
+library(woe)
 
-function(input, output) {
+function(input, output, session) {
   
   
   #Se guarda una copia de los datos en DATA
@@ -112,35 +113,118 @@ function(input, output) {
   
   Text3 <- eventReactive(input$SubmitButton2,{
     
-    RUTA <- "DATA/"
+    if (input$Dec1 == 0)
+    {
+      
+      Texto = HTML(paste("No se balancea el Training", sep="<br/>"))
+  
+    }
     
-    balanceado <- read.csv(paste0(RUTA, "DatosTraining.csv"), header=input$header , sep=input$sep,
-                       quote=input$quote)
+    if (input$Dec1 == 1)
+    {
+      RUTA <- "DATA/"
+    
+      balanceado <- read.csv(paste0(RUTA, "DatosTraining.csv"), header=input$header , sep=input$sep,
+                         quote=input$quote)
 
-    s1 <- sum(balanceado$target)
-    s0 <- nrow(balanceado)
+      
+      s1 <- sum(balanceado$target)
+      st <- nrow(balanceado)
     
-    rate = round(s1 / (s1 + s0), 6)
+      rate = round(s1 / (s1 + st), 6)
     
     
-    if(rate > input$bal1)
-    {
-      paste0("No se balancea ya que el porcentaje de 1s es: ", s1/s0)
+      if(rate > input$bal1)
+      {
+        Texto = HTML(paste(paste0("No se balancea ya que el porcentaje de 1s es: ", round(s1/st,6), " mayor que ", 
+                                  input$bal1), sep="<br/>"))
+      
+      }
+    
+      if(rate <= input$bal1)
+      {
+        balanceado0 <- balanceado[which(balanceado$target == 0),]
+        balanceado1 <- balanceado[which(balanceado$target == 1),]
+
+        set.seed(1)
+        
+        indice0 <- sample(c(1:(st-s1)), size = round(st - (1-input$bal1) * st,0))
+        
+        balanceado0 <- balanceado0[indice0,]
+        balanceado <- rbind(balanceado0, balanceado1)
+      
+        write.csv(balanceado, paste0(RUTA, "training_balanceado.csv"), row.names = FALSE)
+        
+        t1 <- paste0("Se ha balanceado el training a la tasa ", input$bal1)
+        t2 <- paste0("-Num. de 0s en training_balanceado = ", nrow(balanceado0))
+        t3 <- paste0("-Num. de 1s en training_balanceado = ", nrow(balanceado1))
+        Texto = HTML(paste(t1, t2, t3, sep="<br/>"))
+        
+      }
+      
       
     }
     
-    if(rate <= input$bal1)
-    {
-      paste0("Se balancea el training: ")
-      
-    }
+    Texto
     
+
   })
     
   output$text3 <- renderText({
       Text3()
       
     })
+  
+  Dataset <- eventReactive(input$SubmitButton3,{
+    #infile <- input$datafile
+    #if (is.null(infile)) {
+    #  return(NULL)
+    #}
     
+    RUTA = "DATA/"
+    read.csv(paste0(RUTA, "DatosTraining.csv"), header=input$header , sep=input$sep,
+                                      quote=input$quote)
+  })
+  
+  
+  output$varselect <- renderUI({
+    
+    
+  })
+  
+  observe({
+    
+    if (identical(Dataset(), '') || identical(Dataset(), data.frame()))
+      return(NULL)
+    
+    updateSelectInput(session, inputId = "x1", "Lista de variables:",
+                      choices=names(Dataset()))
+  })
+
+
+  IvTable <- eventReactive(input$SubmitButton4,{
+    
+    
+    RUTA = "DATA/"
+    Datos <- read.csv(paste0(RUTA, input$Conj1), header=input$header , sep=input$sep,
+             quote=input$quote)
+    
+    #Datos <- read.csv(paste0(RUTA, "DatosTraining.csv"),  sep=",")
+    
+    iv.num(Datos, input$x1, "target")
+    
+  })
+
+  output$Iv <- renderRHandsontable({
+    rhandsontable(IvTable(), readOnly = TRUE, selectCallback = TRUE, rowHeaders = FALSE) %>%
+      hot_cols(renderer = "function (instance, td, row, col, prop, value, cellProperties) {
+               Handsontable.renderers.TextRenderer.apply(this, arguments);
+               
+               td.style.background = 'orange';
+  }")
+    
+  })
+  
+  
   
 }
