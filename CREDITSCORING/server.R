@@ -127,11 +127,13 @@ function(input, output, session) {
       balanceado <- read.csv(paste0(RUTA, "DatosTraining.csv"), header=input$header , sep=input$sep,
                          quote=input$quote)
 
+      #balanceado <- read.csv(paste0(RUTA, "DatosTraining.csv"), sep=",")
       
+            
       s1 <- sum(balanceado$target)
       st <- nrow(balanceado)
     
-      rate = round(s1 / (s1 + st), 6)
+      rate = round(s1 / (st + s1), 6)
     
     
       if(rate > input$bal1)
@@ -148,7 +150,7 @@ function(input, output, session) {
 
         set.seed(1)
         
-        indice0 <- sample(c(1:(st-s1)), size = round(st - (1-input$bal1) * st,0))
+        indice0 <- sample(c(1:st), size = round(((1-input$bal1) * s1)/input$bal1,0))
         
         balanceado0 <- balanceado0[indice0,]
         balanceado <- rbind(balanceado0, balanceado1)
@@ -182,7 +184,7 @@ function(input, output, session) {
     #}
     
     RUTA = "DATA/"
-    read.csv(paste0(RUTA, "DatosTraining.csv"), header=input$header , sep=input$sep,
+    read.csv(paste0(RUTA, input$Conj1), header=input$header , sep=input$sep,
                                       quote=input$quote)
   })
   
@@ -209,11 +211,47 @@ function(input, output, session) {
     Datos <- read.csv(paste0(RUTA, input$Conj1), header=input$header , sep=input$sep,
              quote=input$quote)
     
-    #Datos <- read.csv(paste0(RUTA, "DatosTraining.csv"),  sep=",")
+    Variable <- Datos[,input$x1]
+
+    Datos2 <- iv.replace.woe(Datos, iv=iv.mult(Datos,"target"))
+    lista_variables <- colnames(Datos2)
+    n = length(lista_variables)
+    indice = vector("numeric", length = n)
+  
+
     
-    iv.num(Datos, input$x1, "target")
+    for (i in 1:n){
+      
+      indice[i] = 0
+      if (substr(lista_variables[i], nchar(lista_variables[i]) - 2, nchar(lista_variables[i])) == "woe"){
+        
+        indice[i] = i
+        
+      }
+      
+    }
+    
+    Datos2 <- Datos2[,indice]
+    write.csv(Datos2, paste0(RUTA,"WOE.csv"), row.names = FALSE)
+    
+
+    if (is.numeric(Variable))
+    {
+      iv.num(Datos, input$x1, "target")
+    }
+    
+    else if (is.character(Variable))
+    {
+      iv.str(Datos, input$x1, "target")
+    }
+    
+    else if (is.factor(Variable))
+    {
+      iv.str(Datos, input$x1, "target")
+    }
     
   })
+  
 
   output$Iv <- renderRHandsontable({
     rhandsontable(IvTable(), readOnly = TRUE, selectCallback = TRUE, rowHeaders = FALSE) %>%
@@ -224,6 +262,22 @@ function(input, output, session) {
   }")
     
   })
+
+  output$varselect1 <- renderUI({
+  
+  })
+  
+  observe({
+      
+      if (identical(Dataset(), '') || identical(Dataset(), data.frame()))
+        return(NULL)
+      
+      updateSelectInput(session, inputId = "x2", "Lista de variables:",
+                        choices=names(Dataset()))
+  })
+    
+    
+  
   
   
   

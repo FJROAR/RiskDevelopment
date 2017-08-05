@@ -73,7 +73,9 @@ fluidRow(
   br(),
   
   h2(p("Analisis Univariante WOE")),
+                     
   
+    
   column(3,wellPanel(selectInput("Conj1", "Elija Conjunto: ", choices = list("Training" = "DatosTraining.csv",
                                                                              "Training Balanceado" = "training_balanceado.csv")),
                      htmlOutput("varselect", inline=TRUE),
@@ -81,7 +83,14 @@ fluidRow(
                                  choices = htmlOutput("varselect"),
                                  multiple = TRUE),
                      actionButton("SubmitButton3", "Lee Variables"),
-                     actionButton("SubmitButton4", "Trameado"))
+                     actionButton("SubmitButton4", "Trameado"),
+                     
+                     htmlOutput("varselect1", inline=TRUE),
+                     selectInput("x2", "Excluir variables del trameo: ", 
+                                 choices = htmlOutput("varselect1"),
+                                 multiple = TRUE),
+                     
+                     actionButton("SubmitButton5", "Excluir"))
   )),
 
   fluidRow(
