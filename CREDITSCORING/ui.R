@@ -97,6 +97,44 @@ fluidRow(
   
     column(10,rHandsontableOutput('Iv'))
   
+  ),
+
+  fluidRow(
+  
+  column(10,tableOutput('IvText'))
+  
+  ),
+
+fluidRow(
+  
+  br(),
+  
+  h2(p("Scorecard Model")),
+  
+  
+  
+  
+  column(3,wellPanel(selectInput("Mod1", 
+                                 "Se aplica criterio de seleccion de Variables: ", 
+                                 choices = list("Manual" = "Manual",
+                                                "Stepwise" = "Stepwise")),
+                     htmlOutput("varselect3", inline=TRUE),
+                     selectInput("x3", "Elija Variable: ", 
+                                 choices = htmlOutput("varselect"),
+                                 multiple = TRUE),
+                     actionButton("SubmitButton6", "Lee Variables"),
+                     actionButton("SubmitButton7", "Genera Scorecard")
+                     )),
+  
+  fluidRow(
+    
+    column(10,tableOutput('Tarjeta1'))
+    
   )
+  
+  )
+  
+
+   
 )
 

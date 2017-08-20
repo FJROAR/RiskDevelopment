@@ -75,12 +75,12 @@ function(input, output, session) {
     s1 <- sum(read.csv(paste0(RUTA, "DatosTraining.csv"), header=input$header , sep=input$sep,
                  quote=input$quote) [,c("target")])
   
-    s0 <- nrow(read.csv(paste0(RUTA, "DatosTraining.csv"), header=input$header , sep=input$sep,
+    st <- nrow(read.csv(paste0(RUTA, "DatosTraining.csv"), header=input$header , sep=input$sep,
                        quote=input$quote))
         
-    rate = round(s1 / (s1 + s0), 6)
+    rate = round(s1 / (st), 6)
     
-    paste0("Training.    Number of 1s: ", s1, " Number of 0s: ", s0, " Rate: ", rate)
+    paste0("Training.    Cantidad de 1s: ", s1, " Cantidad Total de Datos: ", st, " Tasa: ", rate)
     
   })
   
@@ -96,12 +96,12 @@ function(input, output, session) {
     s1 <- sum(read.csv(paste0(RUTA, "DatosTest.csv"), header=input$header , sep=input$sep,
                        quote=input$quote) [,c("target")])
     
-    s0 <- nrow(read.csv(paste0(RUTA, "DatosTest.csv"), header=input$header , sep=input$sep,
+    st <- nrow(read.csv(paste0(RUTA, "DatosTest.csv"), header=input$header , sep=input$sep,
                         quote=input$quote))
     
-    rate = round(s1 / (s1 + s0), 6)
+    rate = round(s1 / st, 6)
     
-    paste0("Validation. Number of 1s: ", s1, " Number of 0s: ", s0, " Rate: ", rate)
+    paste0("Validation. Cantidad de 1s: ", s1, " Cantidad Total de Datos: ", st, " Tasa: ", rate)
     
   })
   
@@ -127,18 +127,16 @@ function(input, output, session) {
       balanceado <- read.csv(paste0(RUTA, "DatosTraining.csv"), header=input$header , sep=input$sep,
                          quote=input$quote)
 
-      #balanceado <- read.csv(paste0(RUTA, "DatosTraining.csv"), sep=",")
-      
             
       s1 <- sum(balanceado$target)
       st <- nrow(balanceado)
     
-      rate = round(s1 / (st + s1), 6)
+      rate = round(s1 / (st), 6)
     
     
       if(rate > input$bal1)
       {
-        Texto = HTML(paste(paste0("No se balancea ya que el porcentaje de 1s es: ", round(s1/st,6), " mayor que ", 
+        Texto = HTML(paste(paste0("No se balancea ya que el porcentaje de 1s es: ", round(s1/(st),6), " mayor que ", 
                                   input$bal1), sep="<br/>"))
       
       }
@@ -150,10 +148,11 @@ function(input, output, session) {
 
         set.seed(1)
         
-        indice0 <- sample(c(1:st), size = round(((1-input$bal1) * s1)/input$bal1,0))
+        indice0 <- sample(c(1:(st-s1)), size = round(((1-input$bal1) * s1)/input$bal1,0))
         
         balanceado0 <- balanceado0[indice0,]
         balanceado <- rbind(balanceado0, balanceado1)
+        balanceado <- balanceado[which(is.na(balanceado$target) == FALSE),]
       
         write.csv(balanceado, paste0(RUTA, "training_balanceado.csv"), row.names = FALSE)
         
@@ -211,14 +210,14 @@ function(input, output, session) {
     Datos <- read.csv(paste0(RUTA, input$Conj1), header=input$header , sep=input$sep,
              quote=input$quote)
     
+    
     Variable <- Datos[,input$x1]
 
     Datos2 <- iv.replace.woe(Datos, iv=iv.mult(Datos,"target"))
+    
     lista_variables <- colnames(Datos2)
     n = length(lista_variables)
     indice = vector("numeric", length = n)
-  
-
     
     for (i in 1:n){
       
@@ -232,6 +231,10 @@ function(input, output, session) {
     }
     
     Datos2 <- Datos2[,indice]
+    
+    target <- Datos[ ,"target"]
+    Datos2 <- cbind(Datos2, target)
+    
     write.csv(Datos2, paste0(RUTA,"WOE.csv"), row.names = FALSE)
     
 
@@ -263,22 +266,249 @@ function(input, output, session) {
     
   })
 
+  
+  Dataset2 <- eventReactive(input$SubmitButton4,{
+    #infile <- input$datafile
+    #if (is.null(infile)) {
+    #  return(NULL)
+    #}
+    
+    RUTA = "DATA/"
+    read.csv(paste0(RUTA, "WOE.csv"), header=input$header , sep=input$sep,
+             quote=input$quote)
+  })
+  
+  
   output$varselect1 <- renderUI({
   
   })
   
   observe({
       
-      if (identical(Dataset(), '') || identical(Dataset(), data.frame()))
+      if (identical(Dataset2(), '') || identical(Dataset2(), data.frame()))
         return(NULL)
       
       updateSelectInput(session, inputId = "x2", "Lista de variables:",
-                        choices=names(Dataset()))
+                        choices=names(Dataset2()))
   })
     
     
+  IvTable2 <- eventReactive(input$SubmitButton5,{
+    
+    
+    RUTA = "DATA/"
+    Datos <- read.csv(paste0(RUTA, "WOE.csv"), header=input$header , sep=input$sep,
+                      quote=input$quote)
+
+    nDatos = names(Datos)
+    a = as.character(input$x2)
+    #a = as.character(c("quaCheckaccount_woe", "numDuration_woe", "quaCredHist_woe"))
+    posa = vector("numeric", length(a))
+    
+    for (i in 1:length(a))
+    {
+
+      for (j in nDatos){
+        posa[i] = posa[i] + 1
+        if(a[i] == j){
+          break
+        }
+        
+      }
+      
+      
+    }
+    
+    posa = -posa
+    Datos <- Datos[, posa]
+    write.csv (Datos, paste0(RUTA, "WOE.csv"), row.names = FALSE)
+      
+    print("Variables Excluidas")
+    #print(posa)
+
+  })
+  
+  output$IvText <- renderText({
+    IvTable2()
+    
+  })
+  
+
+  Dataset3 <- eventReactive(input$SubmitButton6,{
+    #infile <- input$datafile
+    #if (is.null(infile)) {
+    #  return(NULL)
+    #}
+    
+    RUTA = "DATA/"
+    read.csv(paste0(RUTA, "WOE.csv"), header=input$header , sep=input$sep,
+             quote=input$quote)
+  })
   
   
+  output$varselect3 <- renderUI({
+    
+  })
   
+  observe({
+    
+    if (identical(Dataset3(), '') || identical(Dataset3(), data.frame()))
+      return(NULL)
+    
+    updateSelectInput(session, inputId = "x3", "Lista de variables:",
+                      choices=names(Dataset3()))
+  })
+  
+  Modelo1 <- eventReactive(input$SubmitButton7,{
+  
+    RUTA = "DATA/"
+    WOE <- read.csv(paste0(RUTA, "WOE.csv"), header=input$header , sep=input$sep,
+                      quote=input$quote)
+    Datos <- read.csv(paste0(RUTA, input$Conj1), header=input$header , sep=input$sep,
+                    quote=input$quote)
+    
+    
+    #WOE <- read.csv(paste0(RUTA, "WOE.csv"), sep = ",")
+    #Datos <- read.csv(paste0(RUTA, "DatosTraining.csv"), sep = ",")
+    
+    nWOE = names(WOE)
+    b = as.character(input$x3)
+    
+    posb = vector("numeric", length(b))
+    
+    for (i in 1:length(b))
+    {
+      
+      for (j in nWOE){
+        posb[i] = posb[i] + 1
+        if(b[i] == j){
+          break
+        }
+        
+      }
+      
+      
+    }
+    
+    dWOE <- WOE[, posb]
+    dWOE$target = WOE$target
+    
+    min.model = glm(target ~ 1, data=WOE, family = "binomial")
+    biggest <- formula(glm(target ~., data = dWOE, family = "binomial"))
+    
+    if (input$Mod1 == "Manual")
+    {
+      
+      modelo <- glm(target ~., data = dWOE, family = "binomial")
+      
+      #Construccion de la Tarjeta de Puntuacion
+      variables = names(modelo$coefficients)
+      nVariables = length(variables)
+      
+      Factor = 20/log(2)
+      Offset = 600 - Factor * log(50)
+      
+      scorev0 = coefficients(modelo)[1] * Factor + Offset
+      
+      scorev <- data.frame(cbind("Intercept", "c"))
+      scorev$Score <- as.numeric(scorev0)
+      names(scorev) <- c("Variables", "Factors", "Score")
+      variables <- names(modelo$coefficients)
+      
+      for (i in 2:length(variables))
+      {
+        
+        variables[i] <- substr(variables[i],1, nchar(variables[i]) - 4)
+        
+        if (is.character(Datos[ ,variables[i]]))
+        {
+          v <- iv.str(Datos, variables[i], "target")
+          scorevaux <- data.frame(v$variable, v$class ,(v$woe * coefficients(modelo)[2]) * Factor)
+          names(scorevaux) <- c("Variables", "Factors", "Score")
+        } 
+        
+        if (is.factor(Datos[ ,variables[i]]))
+        {
+          v <- iv.str(Datos, variables[i], "target")
+          scorevaux <- data.frame(v$variable, v$class ,(v$woe * coefficients(modelo)[2]) * Factor)
+          names(scorevaux) <- c("Variables", "Factors", "Score")
+          
+        } 
+        
+        if (is.numeric(Datos[ ,variables[i]]))
+        {
+          v <- iv.num(Datos, variables[i], "target")
+          scorevaux <- data.frame(v$variable, v$class ,(v$woe * coefficients(modelo)[2]) * Factor)
+          names(scorevaux) <- c("Variables", "Factors", "Score")
+          
+        } 
+        
+        scorev = rbind(scorev, scorevaux)
+      }      
+      
+    }
+    
+    if (input$Mod1 == "Stepwise")
+    {
+      
+      modelo <- step(min.model, direction='both', scope=biggest)
+      
+      #Construccion de la Tarjeta de Puntuacion
+      variables = names(modelo$coefficients)
+      nVariables = length(variables)
+      
+      Factor = 20/log(2)
+      Offset = 600 - Factor * log(50)
+      
+      scorev0 = coefficients(modelo)[1] * Factor + Offset
+      
+      scorev <- data.frame(cbind("Intercept", "c"))
+      scorev$Score <- as.numeric(scorev0)
+      names(scorev) <- c("Variables", "Factors", "Score")
+      variables <- names(modelo$coefficients)
+      
+      for (i in 2:length(variables))
+      {
+        
+        variables[i] <- substr(variables[i],1, nchar(variables[i]) - 4)
+        
+        if (is.character(Datos[ ,variables[i]]))
+        {
+          v <- iv.str(Datos, variables[i], "target")
+          scorevaux <- data.frame(v$variable, v$class ,(v$woe * coefficients(modelo)[2]) * Factor)
+          names(scorevaux) <- c("Variables", "Factors", "Score")
+        } 
+        
+        if (is.factor(Datos[ ,variables[i]]))
+        {
+          v <- iv.str(Datos, variables[i], "target")
+          scorevaux <- data.frame(v$variable, v$class ,(v$woe * coefficients(modelo)[2]) * Factor)
+          names(scorevaux) <- c("Variables", "Factors", "Score")
+          
+        } 
+        
+        if (is.numeric(Datos[ ,variables[i]]))
+        {
+          v <- iv.num(Datos, variables[i], "target")
+          scorevaux <- data.frame(v$variable, v$class ,(v$woe * coefficients(modelo)[2]) * Factor)
+          names(scorevaux) <- c("Variables", "Factors", "Score")
+          
+        } 
+        
+        scorev = rbind(scorev, scorevaux)
+      }      
+      
+      
+    }
+      
+    scorev
+    
+  })
+  
+
+  output$Tarjeta1 <- renderTable({
+        Modelo1()
+    })
+    
   
 }
